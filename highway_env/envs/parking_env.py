@@ -168,8 +168,8 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
             if  (np.linalg.norm(v.position - self.goal.position) >= 10) and (np.linalg.norm(v.position - self.vehicle.position) >= 10):
                 repeat_pos = False
-                for vehicle in self.road.vehicles:
-                    if (v.position == vehicle.position).all():
+                for added_vehicle in self.road.vehicles:
+                    if np.linalg.norm(v.position - added_vehicle.position) <= 1:
                         repeat_pos = True
                 if not repeat_pos:
                     self.road.vehicles.append(v)
