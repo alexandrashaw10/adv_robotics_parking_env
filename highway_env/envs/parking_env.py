@@ -145,7 +145,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
                          np_random=self.np_random,
                          record_history=self.config["show_trajectories"])
 
-    def _create_vehicles(self) -> None:
+    def create_vehicles(self) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
         self.controlled_vehicles = []
         for i in range(self.config["controlled_vehicles"]):
