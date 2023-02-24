@@ -169,7 +169,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             if  (np.linalg.norm(v.position - self.goal.position) >= 10) and (np.linalg.norm(v.position - self.vehicle.position) >= 10):
                 repeat_pos = False
                 for vehicle in self.road.vehicles:
-                    if v.position == vehicle.position:
+                    if (v.position == vehicle.position).all():
                         repeat_pos = True
                 if not repeat_pos:
                     self.road.vehicles.append(v)
