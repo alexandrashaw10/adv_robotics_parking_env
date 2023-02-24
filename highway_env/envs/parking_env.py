@@ -160,6 +160,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self.road.objects.append(self.goal)
 
         # Other vehicles
+        i = 0
         while len(self.road.vehicles) < self.config["vehicles_count"] + self.config["controlled_vehicles"]:
             print(len(self.road.vehicles))
             print(self.config["vehicles_count"])
@@ -173,7 +174,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
                         repeat_pos = True
                 if not repeat_pos:
                     self.road.vehicles.append(v)
-
+            i += 1
         # Walls
         for y in [-21, 21]:
             obstacle = Obstacle(self.road, [0, y])
