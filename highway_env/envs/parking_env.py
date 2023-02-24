@@ -164,11 +164,11 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             lane = ("a", "b", i) if self.np_random.uniform() >= 0.5 else ("b", "c", i)
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
             self.road.vehicles.append(v)
-        for v in self.road.vehicles:  # Prevent early collisions
-            if v is not self.vehicle and (
-                    np.linalg.norm(v.position - self.goal.position) < 5 or
-                    np.linalg.norm(v.position - self.vehicle.position) < 5):
-                self.road.vehicles.remove(v)
+        # for v in self.road.vehicles:  # Prevent early collisions
+        #     if v is not self.vehicle and (
+        #             np.linalg.norm(v.position - self.goal.position) < 5 or
+        #             np.linalg.norm(v.position - self.vehicle.position) < 5):
+        #         self.road.vehicles.remove(v)
         
         # Walls
         for y in [-21, 21]:
