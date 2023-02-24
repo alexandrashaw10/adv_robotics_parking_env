@@ -160,15 +160,13 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self.road.objects.append(self.goal)
 
         # Other vehicles
-        for i in range(self.config["vehicles_count"]):
+        i = 0
+        while len(self.road.vehicles) < self.config["controlled_vehicles"] + self.config["controlled_vehicles"]:
             lane = ("a", "b", i) if self.np_random.uniform() >= 0.5 else ("b", "c", i)
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
-            self.road.vehicles.append(v)
-        # for v in self.road.vehicles:  # Prevent early collisions
-        #     if v is not self.vehicle and (
-        #             np.linalg.norm(v.position - self.goal.position) < 5 or
-        #             np.linalg.norm(v.position - self.vehicle.position) < 5):
-        #         self.road.vehicles.remove(v)
+            if np.linalg.norm(v.position - self.goal.position) >= 5 and np.linalg.norm(v.position - self.vehicle.position) >= 5:
+                self.road.vehicles.append(v)
+            i += 1
         
         # Walls
         for y in [-21, 21]:
