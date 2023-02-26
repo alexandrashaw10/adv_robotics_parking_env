@@ -257,3 +257,8 @@ register(
     id='parking-smallerLot-v0',
     entry_point='highway_env.envs:ParkingEnvSmallerLot'
 )
+
+register(
+    id='parking-smallerLot-v1',
+    entry_point='highway_env.envs:ParkingEnvSmallerLotWV'
+)
