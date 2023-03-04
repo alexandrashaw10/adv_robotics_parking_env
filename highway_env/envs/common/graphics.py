@@ -95,7 +95,8 @@ class EnvViewer(object):
         if not self.enabled:
             return
 
-        self.sim_surface.move_display_window_to(self.window_position())
+        self.sim_surface.move_display_window_to([0.5, 0.5]) # Stop recentering window to observer vehicle
+        # self.sim_surface.move_display_window_to(self.window_position())
         RoadGraphics.display(self.env.road, self.sim_surface)
 
         if self.vehicle_trajectory:

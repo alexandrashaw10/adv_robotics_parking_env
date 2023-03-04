@@ -4,52 +4,18 @@ from gym.envs.registration import register
 import numpy as np
 
 from highway_env.envs.common.abstract import AbstractEnv
+from highway_env.envs.parking_env import GoalEnv
 from highway_env.envs.common.observation import MultiAgentObservation, observation_factory
 from highway_env.road.lane import StraightLane, LineType
 from highway_env.road.road import Road, RoadNetwork
 from highway_env.vehicle.graphics import VehicleGraphics
 from highway_env.vehicle.kinematics import Vehicle
 from highway_env.vehicle.objects import Landmark, Obstacle
+from highway_env.utils import are_polygons_intersecting
 
 
-class GoalEnv(Env):
-    """
-    Interface for A goal-based environment.
 
-    This interface is needed by agents such as Stable Baseline3's Hindsight Experience Replay (HER) agent.
-    It was originally part of https://github.com/openai/gym, but was later moved
-    to https://github.com/Farama-Foundation/gym-robotics. We cannot add gym-robotics to this project's dependencies,
-    since it does not have an official PyPi package, PyPi does not allow direct dependencies to git repositories.
-    So instead, we just reproduce the interface here.
-
-    A goal-based environment. It functions just as any regular OpenAI Gym environment but it
-    imposes a required structure on the observation_space. More concretely, the observation
-    space is required to contain at least three elements, namely `observation`, `desired_goal`, and
-    `achieved_goal`. Here, `desired_goal` specifies the goal that the agent should attempt to achieve.
-    `achieved_goal` is the goal that it currently achieved instead. `observation` contains the
-    actual observations of the environment as per usual.
-    """
-
-    @abstractmethod
-    def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict) -> float:
-        """Compute the step reward. This externalizes the reward function and makes
-        it dependent on a desired goal and the one that was achieved. If you wish to include
-        additional rewards that are independent of the goal, you can include the necessary values
-        to derive it in 'info' and compute it accordingly.
-        Args:
-            achieved_goal (object): the goal that was achieved during execution
-            desired_goal (object): the desired goal that we asked the agent to attempt to achieve
-            info (dict): an info dictionary with additional information
-        Returns:
-            float: The reward that corresponds to the provided achieved goal w.r.t. to the desired
-            goal. Note that the following should always hold true:
-                ob, reward, done, info = env.step()
-                assert reward == env.compute_reward(ob['achieved_goal'], ob['desired_goal'], info)
-        """
-        raise NotImplementedError
-
-
-class ParkingEnv(AbstractEnv, GoalEnv):
+class ParkingEnv2(AbstractEnv, GoalEnv):
     """
     A continuous control environment.
 
@@ -93,16 +59,18 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             "simulation_frequency": 15,
             "policy_frequency": 5,
             "duration": 100,
-            "screen_width": 600,
-            "screen_height": 350,
+            "screen_width": 900,
+            "screen_height": 1200,
             "centering_position": [0.5, 0.5],
-            "scaling": 7,
+            "scaling": 10,
             "controlled_vehicles": 1,
             "vehicles_count": 0,
             "add_walls": True, 
             "y_offset": 10,
             "length": 8,
-            "font_size": 14
+            "spots": 14,
+            "obstacles": False,
+            "font_size": 22
         })
         return config
 
@@ -114,7 +82,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self.observation_type_parking = observation_factory(self, self.PARKING_OBS["observation"])
 
     def _info(self, obs, action) -> dict:
-        info = super(ParkingEnv, self)._info(obs, action)
+        info = super(ParkingEnv2, self)._info(obs, action)
         if isinstance(self.observation_type, MultiAgentObservation):
             success = tuple(self._is_success(agent_obs['achieved_goal'], agent_obs['desired_goal']) for agent_obs in obs)
         else:
@@ -127,38 +95,107 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self._create_road()
         self._create_vehicles()
 
-    def _create_road(self, spots: int = 14) -> None:
+    def _create_road(self) -> None:
         """
         Create a road composed of straight adjacent lanes.
 
         :param spots: number of spots in the parking
         """
+        spots = self.config["spots"]
         net = RoadNetwork()
         width = 4.0
         lt = (LineType.CONTINUOUS, LineType.CONTINUOUS)
         x_offset = 0
         y_offset = self.config["y_offset"]
         length = self.config["length"]
+
+        second_row_offset = 10 if self.config['y_offset'] > 0 else 20
+        second_row_y = 2 * y_offset + length + second_row_offset
         
         id = 0
         for k in range(spots):
             x = (k + 1 - spots // 2) * (width + x_offset) - width / 2
-            net.add_lane("a", "b", StraightLane([x, y_offset], [x, y_offset+length], width=width, line_types=lt, identifier=id, display_font_size=self.config['font_size']))
-            net.add_lane("b", "c", StraightLane([x, -y_offset], [x, -y_offset-length], width=width, line_types=lt, identifier=id+1, display_font_size=self.config['font_size']))
-            id += 2
+            net.add_lane("a", "b", StraightLane([x, y_offset], [x, y_offset+length], width=width, line_types=lt, identifier=id, display_font_size=self.config['font_size'])) # Upper 1
+            net.add_lane("b", "c", StraightLane([x, -y_offset], [x, -y_offset-length], width=width, line_types=lt, identifier=id+1, display_font_size=self.config['font_size'])) # Upper 2
 
+            net.add_lane("a", "e", StraightLane([x, second_row_y], [x, second_row_y+length], width=width, line_types=lt, identifier=id+2, display_font_size=self.config['font_size'])) # Lower 1
+            net.add_lane("c", "d", StraightLane([x, -second_row_y], [x, -second_row_y-length], width=width, line_types=lt, identifier=id+3, display_font_size=self.config['font_size'])) # Lower 2
+
+            id += 4
+        
         self.road = Road(network=net,
                          np_random=self.np_random,
                          record_history=self.config["show_trajectories"])
+        
+        self.allowed_vehicle_space = {
+            'x' : (-30, 30),
+            'y' : [(y_offset+length+5, second_row_y-5), (-second_row_y+5, -y_offset-length-5)]
+        }
+        if self.config["y_offset"] >= 10:
+            self.allowed_vehicle_space['y'].append((-self.config["y_offset"]//2, self.config["y_offset"]//2))
+
+        # Walls
+        x_end = abs((1 - spots // 2) * (width + x_offset) - width / 2)
+        wall_y = second_row_y + length + 4 
+        wall_x = x_end + 14
+
+        for y in [-wall_y, wall_y]:
+            obstacle = Obstacle(self.road, [0, y])
+            obstacle.LENGTH, obstacle.WIDTH = (2*wall_x, 1)
+            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+            self.road.objects.append(obstacle)
+
+        for x in [-wall_x, wall_x]:
+            obstacle = Obstacle(self.road, [x, 0], heading=np.pi / 2)
+            obstacle.LENGTH, obstacle.WIDTH = (2*wall_y, 1)
+            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+            self.road.objects.append(obstacle)
+
+        if self.config["y_offset"] == 0: 
+            # Draw a line in between center rows
+            obstacle = Obstacle(self.road, [0, 0])
+            obstacle.LENGTH, obstacle.WIDTH = (2*(x_end + width//2 + 1), 1)
+            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+            obstacle.collidable = False
+            obstacle.line_color = (0, 83, 138)
+            self.road.objects.append(obstacle)
+
+        if self.config['obstacles']:
+            self._create_obstacles()
+
+    def _create_obstacles(self):
+        """Create some random obstacles"""
+        obstacle = Obstacle(self.road, (18, -18 - self.config['y_offset']), 90)
+        obstacle.LENGTH, obstacle.WIDTH = 5, 5
+        obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+        self.road.objects.append(obstacle)
+
+        obstacle = Obstacle(self.road, (-18, 18 + self.config['y_offset']), 90)
+        obstacle.LENGTH, obstacle.WIDTH = 5, 5
+        obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+        self.road.objects.append(obstacle)
 
     def _create_vehicles(self) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
         self.controlled_vehicles = []
         for i in range(self.config["controlled_vehicles"]):
-            vehicle = self.action_type.vehicle_class(self.road, [i*20, 0], 2*np.pi*self.np_random.uniform(), 0)
+            while(True):
+                x = np.random.randint(self.allowed_vehicle_space['x'][0], self.allowed_vehicle_space['x'][1])
+                y_sector = np.random.choice([0, 1])
+                y = np.random.randint(self.allowed_vehicle_space['y'][y_sector][0], self.allowed_vehicle_space['y'][y_sector][1])
+                vehicle = self.action_type.vehicle_class(self.road, [x, y], 2*np.pi*self.np_random.uniform(), 0)
+
+                intersect = False
+                for o in self.road.objects:
+                    res, _, _ = are_polygons_intersecting(vehicle.polygon(), o.polygon(), vehicle.velocity, o.velocity)
+                    intersect |= res
+                if not intersect:
+                    break
+
             vehicle.color = VehicleGraphics.EGO_COLOR
             self.road.vehicles.append(vehicle)
             self.controlled_vehicles.append(vehicle)
+            # print(vehicle.__dict__)
 
         # Goal
         lane = self.np_random.choice(self.road.network.lanes_list())
@@ -173,19 +210,6 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             if np.linalg.norm(v.position - self.goal.position) >= 5 and np.linalg.norm(v.position - self.vehicle.position) >= 5:
                 self.road.vehicles.append(v)
             i += 1
-        
-        # Walls
-        for y in [-21, 21]:
-            obstacle = Obstacle(self.road, [0, y])
-            obstacle.LENGTH, obstacle.WIDTH = (70, 1)
-            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
-            self.road.objects.append(obstacle)
-        for x in [-35, 35]:
-            obstacle = Obstacle(self.road, [x, 0], heading=np.pi / 2)
-            obstacle.LENGTH, obstacle.WIDTH = (42, 1)
-            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
-            self.road.objects.append(obstacle)
-
 
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
         """
@@ -222,45 +246,45 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         return bool(crashed or success or timeout)
 
 
-class ParkingEnvActionRepeat(ParkingEnv):
-    def __init__(self):
-        super().__init__({"policy_frequency": 1, "duration": 20})
+# class ParkingEnvActionRepeat(ParkingEnv):
+#     def __init__(self):
+#         super().__init__({"policy_frequency": 1, "duration": 20})
 
-class ParkingEnvParkedVehicles(ParkingEnv):
-    def __init__(self):
-        super().__init__({"vehicles_count": 10})
+# class ParkingEnvParkedVehicles(ParkingEnv):
+#     def __init__(self):
+#         super().__init__({"vehicles_count": 10})
 
-class ParkingEnvSmallerLot(ParkingEnv):
-    def __init__(self):
-        super().__init__({"y_offset": 5})
+# class ParkingEnvSmallerLot(ParkingEnv):
+#     def __init__(self):
+#         super().__init__({"y_offset": 5})
         
-class ParkingEnvSmallerLotWV(ParkingEnv):
-    def __init__(self):
-        super().__init__({"y_offset": 5, "vehicles_count": 4})
+# class ParkingEnvSmallerLotWV(ParkingEnv):
+#     def __init__(self):
+#         super().__init__({"y_offset": 5, "vehicles_count": 4})
        
 
 
 register(
-    id='parking-v0',
-    entry_point='highway_env.envs:ParkingEnv',
+    id='parking-v2',
+    entry_point='highway_env.envs:ParkingEnv2',
 )
 
-register(
-    id='parking-ActionRepeat-v0',
-    entry_point='highway_env.envs:ParkingEnvActionRepeat'
-)
+# register(
+#     id='parking-ActionRepeat-v0',
+#     entry_point='highway_env.envs:ParkingEnvActionRepeat'
+# )
 
-register(
-    id='parking-parkedVehicles-v0',
-    entry_point='highway_env.envs:ParkingEnvParkedVehicles'
-)
+# register(
+#     id='parking-parkedVehicles-v0',
+#     entry_point='highway_env.envs:ParkingEnvParkedVehicles'
+# )
 
-register(
-    id='parking-smallerLot-v0',
-    entry_point='highway_env.envs:ParkingEnvSmallerLot'
-)
+# register(
+#     id='parking-smallerLot-v0',
+#     entry_point='highway_env.envs:ParkingEnvSmallerLot'
+# )
 
-register(
-    id='parking-smallerLot-v1',
-    entry_point='highway_env.envs:ParkingEnvSmallerLotWV'
-)
+# register(
+#     id='parking-smallerLot-v1',
+#     entry_point='highway_env.envs:ParkingEnvSmallerLotWV'
+# )
