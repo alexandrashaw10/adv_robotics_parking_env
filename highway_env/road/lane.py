@@ -148,7 +148,9 @@ class StraightLane(AbstractLane):
                  line_types: Tuple[LineType, LineType] = None,
                  forbidden: bool = False,
                  speed_limit: float = 20,
-                 priority: int = 0) -> None:
+                 priority: int = 0,
+                 identifier: int = None,
+                 display_font_size: int = 5) -> None:
         """
         New straight lane.
 
@@ -170,6 +172,8 @@ class StraightLane(AbstractLane):
         self.forbidden = forbidden
         self.priority = priority
         self.speed_limit = speed_limit
+        self.identifier = identifier
+        self.display_font_size = display_font_size # Font size to display the lane counter
 
     def position(self, longitudinal: float, lateral: float) -> np.ndarray:
         return self.start + longitudinal * self.direction + lateral * self.direction_lateral
@@ -206,6 +210,8 @@ class StraightLane(AbstractLane):
             }
         }
 
+    def __repr__(self) -> str:
+        return f"lane {self.identifier}, ({self.start}->{self.end})"
 
 class SineLane(StraightLane):
 

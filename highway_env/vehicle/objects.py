@@ -51,6 +51,9 @@ class RoadObject(ABC):
         self.hit = False
         self.impact = np.zeros(self.position.shape)
 
+        # Option to set line color of the object manually
+        self.line_color = None
+
     @classmethod
     def make_on_lane(cls, road: 'Road', lane_index: LaneIndex, longitudinal: float, speed: Optional[float] = None) \
             -> 'RoadObject':
