@@ -210,8 +210,8 @@ class StraightLane(AbstractLane):
             }
         }
 
-    def __repr__(self) -> str:
-        return f"lane {self.identifier}, ({self.start}->{self.end})"
+    # def __repr__(self) -> str:
+    #     return f"lane {self.identifier}, ({self.start}->{self.end})"
 
 class SineLane(StraightLane):
 
