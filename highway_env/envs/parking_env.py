@@ -2,6 +2,7 @@ from abc import abstractmethod
 from gym import Env
 from gym.envs.registration import register
 import numpy as np
+import random
 
 from highway_env.envs.common.abstract import AbstractEnv
 from highway_env.envs.common.observation import MultiAgentObservation, observation_factory
@@ -102,7 +103,8 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             "add_walls": True, 
             "y_offset": 10,
             "length": 8,
-            "font_size": 14
+            "font_size": 14,
+            "random_start": False
         })
         return config
 
@@ -155,37 +157,39 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         """Create some new random vehicles of a given type, and add them on the road."""
         self.controlled_vehicles = []
         for i in range(self.config["controlled_vehicles"]):
-            vehicle = self.action_type.vehicle_class(self.road, [i*20, 0], 2*np.pi*self.np_random.uniform(), 0)
+            if self.config["random_start"]:
+                while(True):
+                    x = np.random.randint(self.allowed_vehicle_space['x'][0], self.allowed_vehicle_space['x'][1])
+                    y_sector = np.random.choice([0, 1])
+                    y = np.random.randint(self.allowed_vehicle_space['y'][y_sector][0], self.allowed_vehicle_space['y'][y_sector][1])
+                    vehicle = self.action_type.vehicle_class(self.road, [x, y], 2*np.pi*self.np_random.uniform(), 0)
+
+                    intersect = False
+                    for o in self.road.objects:
+                        res, _, _ = are_polygons_intersecting(vehicle.polygon(), o.polygon(), vehicle.velocity, o.velocity)
+                        intersect |= res
+                    if not intersect:
+                        break
+            else:
+                vehicle = self.action_type.vehicle_class(self.road, [0, 0], 2*np.pi*self.np_random.uniform(), 0)
+
             vehicle.color = VehicleGraphics.EGO_COLOR
             self.road.vehicles.append(vehicle)
             self.controlled_vehicles.append(vehicle)
 
         # Goal
-        lane = self.np_random.choice(self.road.network.lanes_list())
-        self.goal = Landmark(self.road, lane.position(lane.length/2, 0), heading=lane.heading)
+        goal_lane = self.np_random.choice(self.road.network.lanes_list())
+        self.goal = Landmark(self.road, goal_lane.position(goal_lane.length/2, 0), heading=goal_lane.heading)
         self.road.objects.append(self.goal)
 
         # Other vehicles
-        i = 0
-        while len(self.road.vehicles) < self.config["vehicles_count"] + self.config["controlled_vehicles"]:
-            lane = ("a", "b", i) if self.np_random.uniform() >= 0.5 else ("b", "c", i)
+        free_lanes = self.road.network.lanes_list().copy()
+        free_lanes.remove(goal_lane)
+        random.shuffle(free_lanes)
+        for _ in range(self.config["vehicles_count"]):
+            lane = free_lanes.pop()
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
-            if np.linalg.norm(v.position - self.goal.position) >= 5 and np.linalg.norm(v.position - self.vehicle.position) >= 5:
-                self.road.vehicles.append(v)
-            i += 1
-        
-        # Walls
-        for y in [-21, 21]:
-            obstacle = Obstacle(self.road, [0, y])
-            obstacle.LENGTH, obstacle.WIDTH = (70, 1)
-            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
-            self.road.objects.append(obstacle)
-        for x in [-35, 35]:
-            obstacle = Obstacle(self.road, [x, 0], heading=np.pi / 2)
-            obstacle.LENGTH, obstacle.WIDTH = (42, 1)
-            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
-            self.road.objects.append(obstacle)
-
+            self.road.vehicles.append(v)
 
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
         """
