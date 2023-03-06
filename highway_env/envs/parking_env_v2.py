@@ -71,7 +71,8 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             "length": 8,
             "spots": 14,
             "obstacles": False,
-            "font_size": 22
+            "font_size": 22,
+            "random_start": False
         })
         return config
 
@@ -182,18 +183,21 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         """Create some new random vehicles of a given type, and add them on the road."""
         self.controlled_vehicles = []
         for i in range(self.config["controlled_vehicles"]):
-            while(True):
-                x = np.random.randint(self.allowed_vehicle_space['x'][0], self.allowed_vehicle_space['x'][1])
-                y_sector = np.random.choice([0, 1])
-                y = np.random.randint(self.allowed_vehicle_space['y'][y_sector][0], self.allowed_vehicle_space['y'][y_sector][1])
-                vehicle = self.action_type.vehicle_class(self.road, [x, y], 2*np.pi*self.np_random.uniform(), 0)
+            if self.config["random_start"]:
+                while(True):
+                    x = np.random.randint(self.allowed_vehicle_space['x'][0], self.allowed_vehicle_space['x'][1])
+                    y_sector = np.random.choice([0, 1])
+                    y = np.random.randint(self.allowed_vehicle_space['y'][y_sector][0], self.allowed_vehicle_space['y'][y_sector][1])
+                    vehicle = self.action_type.vehicle_class(self.road, [x, y], 2*np.pi*self.np_random.uniform(), 0)
 
-                intersect = False
-                for o in self.road.objects:
-                    res, _, _ = are_polygons_intersecting(vehicle.polygon(), o.polygon(), vehicle.velocity, o.velocity)
-                    intersect |= res
-                if not intersect:
-                    break
+                    intersect = False
+                    for o in self.road.objects:
+                        res, _, _ = are_polygons_intersecting(vehicle.polygon(), o.polygon(), vehicle.velocity, o.velocity)
+                        intersect |= res
+                    if not intersect:
+                        break
+            else:
+                vehicle = self.action_type.vehicle_class(self.road, [0, 0], 2*np.pi*self.np_random.uniform(), 0)
 
             vehicle.color = VehicleGraphics.EGO_COLOR
             self.road.vehicles.append(vehicle)
