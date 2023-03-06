@@ -324,16 +324,16 @@ class KinematicObservationWithGoal(ObservationType):
             df = df.append(pd.DataFrame(data=rows, columns=self.features), ignore_index=True)
         # Reorder
         df = df[self.features]
-        obs = df.values.copy()
+        obs_ = df.values.copy()
         
         if self.order == "shuffled":
-            self.env.np_random.shuffle(obs[1:])
+            self.env.np_random.shuffle(obs_[1:])
 
         # Add goal and format to KinematicsGoal format
         achieved = np.ravel(pd.DataFrame.from_records([self.observer_vehicle.to_dict()])[self.features])
         goal = np.ravel(pd.DataFrame.from_records([self.env.goal.to_dict()])[self.features])
         obs = {
-            "observation": obs.astype(self.space().dtype),
+            "observation": obs_.astype(self.space().dtype),
             "achieved_goal": achieved,
             "desired_goal": goal
         }
