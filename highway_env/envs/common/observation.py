@@ -445,6 +445,61 @@ class KinematicsGoalObservation(KinematicObservation):
         }
         return obs
 
+class KinematicsGoalObservationV2(KinematicObservation):
+    ''' Handles Kinematic Goals and Multiple Cars in Observation State '''
+    def __init__(self, env: 'AbstractEnv', scales: List[float], 
+                features: List[str] = None,
+                vehicles_count: int = 5,
+                features_range: Dict[str, List[float]] = None,
+                absolute: bool = False,
+                order: str = "sorted",
+                normalize: bool = True,
+                clip: bool = True,
+                see_behind: bool = False,
+                observe_intentions: bool = False,
+                **kwargs: dict) -> None:
+        self.scales = np.array(scales)
+        # pass in the details of the env to the Kinematic Observations
+        super().__init__(env, features,
+                vehicles_count,
+                features_range,
+                absolute,
+                order,
+                normalize,
+                clip,
+                see_behind,
+                observe_intentions,
+                **kwargs)
+
+    def space(self) -> spaces.Space:
+        try:
+            obs = self.observe()
+            return spaces.Dict(dict(
+                desired_goal=spaces.Box(-np.inf, np.inf, shape=obs["desired_goal"].shape, dtype=np.float64),
+                achieved_goal=spaces.Box(-np.inf, np.inf, shape=obs["achieved_goal"].shape, dtype=np.float64),
+                observation=super().space(), # should be a list of vehicles
+            ))
+        except AttributeError:
+            return spaces.Space()
+
+    def observe(self) -> Dict[str, np.ndarray]:
+        if not self.observer_vehicle:
+            return {
+            "observation": np.zeros((self.vehicles_count + 1, len(self.features))),
+            "achieved_goal": np.zeros((len(self.features),)),
+            "desired_goal": np.zeros((len(self.features),))
+        }
+
+        observation = super.observe()
+
+        self_loc = np.ravel(pd.DataFrame.from_records([self.observer_vehicle.to_dict()])[self.features])
+        goal = np.ravel(pd.DataFrame.from_records([self.env.goal.to_dict()])[self.features])
+        obs = {
+            "observation": observation / self.scales,
+            "achieved_goal": self_loc / self.scales,
+            "desired_goal": goal / self.scales
+        }
+        return obs
 
 class AttributesObservation(ObservationType):
     def __init__(self, env: 'AbstractEnv', attributes: List[str], **kwargs: dict) -> None:
@@ -630,6 +685,8 @@ def observation_factory(env: 'AbstractEnv', config: dict) -> ObservationType:
         return OccupancyGridObservation(env, **config)
     elif config["type"] == "KinematicsGoal":
         return KinematicsGoalObservation(env, **config)
+    elif config["type"] == "KinematicsGoalV2":
+        return KinematicsGoalObservationV2(env, **config)
     elif config["type"] == "GrayscaleObservation":
         return GrayscaleObservation(env, **config)
     elif config["type"] == "AttributesObservation":
