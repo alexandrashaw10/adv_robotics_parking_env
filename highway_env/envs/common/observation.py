@@ -741,6 +741,8 @@ def observation_factory(env: 'AbstractEnv', config: dict) -> ObservationType:
         return OccupancyGridObservation(env, **config)
     elif config["type"] == "KinematicsGoal":
         return KinematicsGoalObservation(env, **config)
+    elif config["type"] == "KinematicsObservationWithGoal":
+        return KinematicObservationWithGoal(env, **config)
     elif config["type"] == "GrayscaleObservation":
         return GrayscaleObservation(env, **config)
     elif config["type"] == "AttributesObservation":
