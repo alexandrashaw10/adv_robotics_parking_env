@@ -120,7 +120,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             net.add_lane("b", "c", StraightLane([x, -y_offset], [x, -y_offset-length], width=width, line_types=lt, identifier=id+1, display_font_size=self.config['font_size'])) # Upper 2
 
             net.add_lane("a", "e", StraightLane([x, second_row_y], [x, second_row_y+length], width=width, line_types=lt, identifier=id+2, display_font_size=self.config['font_size'])) # Lower 1
-            net.add_lane("c", "d", StraightLane([x, -second_row_y], [x, -second_row_y-length], width=width, line_types=lt, identifier=id+3, display_font_size=self.config['font_size'])) # Lower 2
+            # net.add_lane("c", "d", StraightLane([x, -second_row_y], [x, -second_row_y-length], width=width, line_types=lt, identifier=id+3, display_font_size=self.config['font_size'])) # Lower 2
 
             id += 4
         
