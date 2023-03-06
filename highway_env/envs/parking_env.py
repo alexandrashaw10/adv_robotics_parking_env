@@ -183,13 +183,13 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self.road.objects.append(self.goal)
 
         # Other vehicles
-        free_lanes = self.road.network.lanes_list().copy()
-        free_lanes.remove(goal_lane)
-        random.shuffle(free_lanes)
-        for _ in range(self.config["vehicles_count"]):
-            lane = free_lanes.pop()
+        i = 0
+        while len(self.road.vehicles) < self.config["vehicles_count"] + self.config["controlled_vehicles"]:
+            lane = ("a", "b", i) if self.np_random.uniform() >= 0.5 else ("b", "c", i)
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
-            self.road.vehicles.append(v)
+            if np.linalg.norm(v.position - self.goal.position) >= 2 and np.linalg.norm(v.position - self.vehicle.position) >= 2:
+                self.road.vehicles.append(v)
+            i += 1
 
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
         """
