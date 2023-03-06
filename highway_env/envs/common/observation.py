@@ -297,7 +297,7 @@ class KinematicObservationWithGoal(ObservationType):
                     df[feature] = np.clip(df[feature], -1, 1)
         return df
 
-    def observe(self) -> np.ndarray:
+    def observe(self) -> Dict[str, np.ndarray]:
         if not self.env.road:
             return np.zeros(self.space().shape)
 
@@ -333,7 +333,7 @@ class KinematicObservationWithGoal(ObservationType):
         achieved = np.ravel(pd.DataFrame.from_records([self.observer_vehicle.to_dict()])[self.features])
         goal = np.ravel(pd.DataFrame.from_records([self.env.goal.to_dict()])[self.features])
         obs = {
-            "observation": obs_,
+            "observation": obs_.astype(self.space().dtype),
             "achieved_goal": achieved,
             "desired_goal": goal
         }
