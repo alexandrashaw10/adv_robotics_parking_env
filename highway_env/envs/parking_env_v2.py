@@ -30,7 +30,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
     # this PARKING_OBS to calculate the reward and the info.
     # Bug fixed by Mcfly(https://github.com/McflyWZX)
     PARKING_OBS = {"observation": {
-            "type": "KinematicsGoal",
+            "type": "KinematicsGoalV2",
             "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
             "scales": [100, 100, 5, 5, 1, 1],
             "normalize": False
@@ -45,10 +45,11 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "KinematicsGoal",
+                "type": "KinematicsGoalV2",
                 "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
                 "scales": [100, 100, 5, 5, 1, 1],
-                "normalize": False
+                "normalize": False,
+                "vehicles_count": 20, # if changing the vehicle count make sure to change both
             },
             "action": {
                 "type": "ContinuousAction"
@@ -65,7 +66,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             "centering_position": [0.5, 0.5],
             "scaling": 10,
             "controlled_vehicles": 1,
-            "vehicles_count": 0,
+            "vehicles_count": 20,
             "add_walls": True, 
             "y_offset": 10,
             "length": 8,
@@ -80,7 +81,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         Set the types and spaces of observation and action from config.
         """
         super().define_spaces()
-        self.observation_type_parking = observation_factory(self, self.PARKING_OBS["observation"])
+        self.observation_type_parking = observation_factory(self, self.config["observation"])
 
     def _info(self, obs, action) -> dict:
         info = super(ParkingEnv2, self)._info(obs, action)
