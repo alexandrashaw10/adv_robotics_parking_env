@@ -333,7 +333,7 @@ class KinematicObservationWithGoal(ObservationType):
         achieved = np.ravel(pd.DataFrame.from_records([self.observer_vehicle.to_dict()])[self.features])
         goal = np.ravel(pd.DataFrame.from_records([self.env.goal.to_dict()])[self.features])
         obs = {
-            "observation": obs_.astype(self.space().dtype),
+            "observation": obs_.to_numpy(),
             "achieved_goal": achieved,
             "desired_goal": goal
         }
