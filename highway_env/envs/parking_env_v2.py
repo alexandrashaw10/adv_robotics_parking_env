@@ -30,7 +30,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
     # this PARKING_OBS to calculate the reward and the info.
     # Bug fixed by Mcfly(https://github.com/McflyWZX)
     PARKING_OBS = {"observation": {
-            "type": "KinematicsGoal",
+            "type": "KinematicsObservationWithGoal",
             "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
             "scales": [100, 100, 5, 5, 1, 1],
             "normalize": False
@@ -45,10 +45,9 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "KinematicsGoal",
-                "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
-                "scales": [100, 100, 5, 5, 1, 1],
-                "normalize": False
+                "type": "KinematicsObservationWithGoal",
+                "vehicles_count": 0, 
+
             },
             "action": {
                 "type": "ContinuousAction"
