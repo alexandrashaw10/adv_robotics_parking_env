@@ -164,7 +164,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         while len(self.road.vehicles) < self.config["vehicles_count"] + self.config["controlled_vehicles"]:
             lane = ("a", "b", i) if self.np_random.uniform() >= 0.5 else ("b", "c", i)
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
-            if np.linalg.norm(v.position - self.goal.position) >= 5 and np.linalg.norm(v.position - self.vehicle.position) >= 5:
+            if np.linalg.norm(v.position - self.goal.position) >= 2 and np.linalg.norm(v.position - self.vehicle.position) >= 2:
                 self.road.vehicles.append(v)
             i += 1
         
