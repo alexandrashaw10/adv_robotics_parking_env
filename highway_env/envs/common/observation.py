@@ -446,7 +446,7 @@ class KinematicsGoalObservation(KinematicObservation):
         return obs
     
 
-class KinematicsWithGoalObservation(KinematicObservation):
+class KinematicsWithGoal(KinematicObservation):
     def __init__(self, env: 'AbstractEnv', scales: List[float], **kwargs: dict) -> None:
         self.scales = np.array(scales)
         super().__init__(env, **kwargs)
@@ -728,7 +728,7 @@ def observation_factory(env: 'AbstractEnv', config: dict) -> ObservationType:
         return LidarObservation(env, **config)
     elif config["type"] == "ExitObservation":
         return ExitObservation(env, **config)
-    elif config["type"] == "KinematicsWithGoalObservation":
-        return KinematicsWithGoalObservation(env, **config)
+    elif config["type"] == "KinematicsWithGoal":
+        return KinematicsWithGoal(env, **config)
     else:
         raise ValueError("Unknown observation type")
