@@ -121,7 +121,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             net.add_lane("b", "c", StraightLane([x, -y_offset], [x, -y_offset-length], width=width, line_types=lt, identifier=id+1, display_font_size=self.config['font_size'])) # Upper 2
 
             net.add_lane("a", "e", StraightLane([x, second_row_y], [x, second_row_y+length], width=width, line_types=lt, identifier=id+2, display_font_size=self.config['font_size'])) # Lower 1
-            # net.add_lane("c", "d", StraightLane([x, -second_row_y], [x, -second_row_y-length], width=width, line_types=lt, identifier=id+3, display_font_size=self.config['font_size'])) # Lower 2
+            net.add_lane("c", "d", StraightLane([x, -second_row_y], [x, -second_row_y-length], width=width, line_types=lt, identifier=id+3, display_font_size=self.config['font_size'])) # Lower 2
 
             id += 4
         
@@ -211,7 +211,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         # Other vehicles
         free_lanes = self.road.network.lanes_list().copy()
         free_lanes.remove(goal_lane)
-        random.shuffle(free_lanes)
+        random.Random(4).shuffle(free_lanes)
         for _ in range(self.config["vehicles_count"]):
             lane = free_lanes.pop()
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
