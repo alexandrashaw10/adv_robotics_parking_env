@@ -105,7 +105,9 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             "y_offset": 10,
             "length": 8,
             "font_size": 14,
-            "random_start": False
+            "random_start": False,
+            'custom_reward': True,
+            'custom_reward_scale': 100
         })
         return config
 
@@ -210,6 +212,11 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             lane = free_lanes.pop()
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
             self.road.vehicles.append(v)
+    
+    def _custom_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> float:
+        distance = np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"]))
+        reward = (np.sqrt(2/np.pi) * np.exp(-np.power(distance, 0.5)**2 / 6)) * self.config['reward_scale']
+        return reward
 
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
         """
@@ -223,7 +230,10 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         :param p: the Lp^p norm used in the reward. Use p<1 to have high kurtosis for rewards in [0, 1]
         :return: the corresponding reward
         """
-        return -np.power(np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"])), p)
+        if self.config['custom_reward']:
+            return self._custom_reward(achieved_goal, desired_goal)
+        else:
+            return -np.power(np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"])), p)
 
     def _reward(self, action: np.ndarray) -> float:
         obs = self.observation_type_parking.observe()
@@ -233,8 +243,8 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         return reward
 
     def _is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> bool:
-        return self.compute_reward(achieved_goal, desired_goal, {}) > -self.config["success_goal_reward"]
-
+        return -np.power(np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"])), 0.5) > -self.config["success_goal_reward"]
+    
     def _is_terminal(self) -> bool:
         """The episode is over if the ego vehicle crashed or the goal is reached."""
         time = self.steps >= self.config["duration"]
