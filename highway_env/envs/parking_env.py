@@ -156,6 +156,23 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self.road = Road(network=net,
                          np_random=self.np_random,
                          record_history=self.config["show_trajectories"])
+        
+        # Walls
+        x_end = abs((1 - spots // 2) * (width + x_offset) - width / 2)
+        wall_y = y_offset + length + 4 
+        wall_x = x_end + 14
+
+        for y in [-wall_y, wall_y]:
+            obstacle = Obstacle(self.road, [0, y])
+            obstacle.LENGTH, obstacle.WIDTH = (2*wall_x, 1)
+            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+            self.road.objects.append(obstacle)
+
+        for x in [-wall_x, wall_x]:
+            obstacle = Obstacle(self.road, [x, 0], heading=np.pi / 2)
+            obstacle.LENGTH, obstacle.WIDTH = (2*wall_y, 1)
+            obstacle.diagonal = np.sqrt(obstacle.LENGTH**2 + obstacle.WIDTH**2)
+            self.road.objects.append(obstacle)
 
     def _create_vehicles(self) -> None:
         """Create some new random vehicles of a given type, and add them on the road."""
