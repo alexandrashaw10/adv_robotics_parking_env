@@ -4,9 +4,9 @@ import numpy as np
 
 from highway_env import utils
 
-
-from highway_env.road.lane import AbstractLane
-from highway_env.road.road import Road
+if TYPE_CHECKING:
+    from highway_env.road.lane import AbstractLane
+    from highway_env.road.road import Road
 
 LaneIndex = Tuple[str, str, int]
 

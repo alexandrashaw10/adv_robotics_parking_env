@@ -30,10 +30,10 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
     # this PARKING_OBS to calculate the reward and the info.
     # Bug fixed by Mcfly(https://github.com/McflyWZX)
     PARKING_OBS = {"observation": {
-            "type": "KinematicsGoal",
+            "type": "KinematicsWithGoalObservation",
             "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
             "scales": [100, 100, 5, 5, 1, 1],
-            "normalize": False
+            "normalize": False,
         }}
 
     def __init__(self, config: dict = None) -> None:
@@ -45,7 +45,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "KinematicsGoal",
+                "type": "KinematicsWithGoalObservation",
                 "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
                 "scales": [100, 100, 5, 5, 1, 1],
                 "normalize": False
@@ -65,7 +65,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             "centering_position": [0.5, 0.5],
             "scaling": 10,
             "controlled_vehicles": 1,
-            "vehicles_count": 0,
+            "vehicles_count": 10,
             "add_walls": True, 
             "y_offset": 10,
             "length": 8,
@@ -80,6 +80,9 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         """
         Set the types and spaces of observation and action from config.
         """
+        self.config['observation']['vehicles_count'] = self.config['vehicles_count']
+        self.PARKING_OBS['observation']['vehicles_count'] = self.config['vehicles_count']
+
         super().define_spaces()
         self.observation_type_parking = observation_factory(self, self.PARKING_OBS["observation"])
 
@@ -212,7 +215,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         free_lanes = self.road.network.lanes_list().copy()
         free_lanes.remove(goal_lane)
         random.Random(4).shuffle(free_lanes)
-        for _ in range(self.config["vehicles_count"]):
+        for _ in range(self.config["vehicles_count"] - 1):
             lane = free_lanes.pop()
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
             self.road.vehicles.append(v)
