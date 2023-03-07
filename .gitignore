@@ -50,3 +50,6 @@ coverage.xml
 docs/_build/
 
 testing parking v2.ipynb
+videos_load
+weights
+*.zip

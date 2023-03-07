@@ -25,17 +25,6 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
 
     Credits to Munir Jojo-Verge for the idea and initial implementation.
     """
-
-    # For parking env with GrayscaleObservation, the env need
-    # this PARKING_OBS to calculate the reward and the info.
-    # Bug fixed by Mcfly(https://github.com/McflyWZX)
-    PARKING_OBS = {"observation": {
-            "type": "KinematicsWithGoalObservation",
-            "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
-            "scales": [100, 100, 5, 5, 1, 1],
-            "normalize": False,
-        }}
-
     def __init__(self, config: dict = None) -> None:
         super().__init__(config)
         self.observation_type_parking = None
@@ -45,7 +34,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "KinematicsWithGoalObservation",
+                "type": "KinematicsWithGoal",
                 "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
                 "scales": [100, 100, 5, 5, 1, 1],
                 "normalize": False
@@ -81,10 +70,9 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         Set the types and spaces of observation and action from config.
         """
         self.config['observation']['vehicles_count'] = self.config['vehicles_count']
-        self.PARKING_OBS['observation']['vehicles_count'] = self.config['vehicles_count']
 
         super().define_spaces()
-        self.observation_type_parking = observation_factory(self, self.PARKING_OBS["observation"])
+        self.observation_type_parking = observation_factory(self, self.config["observation"])
 
     def _info(self, obs, action) -> dict:
         info = super(ParkingEnv2, self)._info(obs, action)
