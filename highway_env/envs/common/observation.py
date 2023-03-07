@@ -445,7 +445,7 @@ class KinematicsGoalObservation(KinematicObservation):
         }
         return obs
     
-    
+
 class KinematicsWithGoalObservation(KinematicObservation):
     def __init__(self, env: 'AbstractEnv', scales: List[float], **kwargs: dict) -> None:
         self.scales = np.array(scales)
@@ -506,9 +506,9 @@ class KinematicsWithGoalObservation(KinematicObservation):
                                                          sort=self.order == "sorted")
         if close_vehicles:
             origin = self.observer_vehicle if not self.absolute else None
-            df = df.append(pd.DataFrame.from_records(
+            df = pd.concat([df, pd.DataFrame.from_records(
                 [v.to_dict(origin, observe_intentions=self.observe_intentions)
-                 for v in close_vehicles[-self.vehicles_count + 1:]])[self.features],
+                 for v in close_vehicles[-self.vehicles_count + 1:]])[self.features]],
                            ignore_index=True)
         # Normalize and clip
         if self.normalize:
@@ -516,7 +516,7 @@ class KinematicsWithGoalObservation(KinematicObservation):
         # Fill missing rows
         if df.shape[0] < self.vehicles_count:
             rows = np.zeros((self.vehicles_count - df.shape[0], len(self.features)))
-            df = df.append(pd.DataFrame(data=rows, columns=self.features), ignore_index=True)
+            df = pd.concat([df, pd.DataFrame(data=rows, columns=self.features)], ignore_index=True)
         # Reorder
         df = df[self.features]
         obs = df.values.copy()
