@@ -259,7 +259,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         reward = sum(self.compute_reward(agent_obs['achieved_goal'], agent_obs['desired_goal'], {}) for agent_obs in obs)
         reward += self.config['collision_reward'] * sum(v.crashed for v in self.controlled_vehicles)
         # add 100 to the reward if the agent succeeds
-        reward += 100 * sum(self._is_success(agent_obs['achieved_goal'], agent_obs['desired_goal'], {}) for agent_obs in obs)
+        reward += 100 * sum(self._is_success(agent_obs['achieved_goal'], agent_obs['desired_goal']) for agent_obs in obs)
         return reward
 
     def _is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> bool:
