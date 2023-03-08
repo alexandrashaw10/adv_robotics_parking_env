@@ -80,7 +80,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         config = super().default_config()
         config.update({
             "observation": {
-                "type": "KinematicsGoal",
+                "type": "KinematicsWithGoal",
                 "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
                 "scales": [100, 100, 5, 5, 1, 1],
                 "normalize": False
@@ -107,7 +107,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             "font_size": 14,
             "random_start": False,
             'custom_reward': True,
-            'custom_reward_scale': 100
+            'custom_reward_scale': 1
         })
         return config
 
