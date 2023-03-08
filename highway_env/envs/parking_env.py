@@ -109,7 +109,8 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             'custom_reward': False,
             "exp_reward": True,
             'custom_reward_scale': 1,
-            "exp_reward_weights": [0.04, 0.03, 0, 0, 40, 40],
+            "exp_position_weights": [0.04, 0.03, 0, 0, 0, 0],
+            "exp_angle_weights": [0, 0, 0, 0, 40, 40],
         })
         return config
 
@@ -222,16 +223,16 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         return reward
     
     def _custom_reward_mathworks(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> float:
-        print(achieved_goal, desired_goal)
         # multiply each position by the scales so that it matches the scale we want
         scal_achieved = achieved_goal * self.config["observation"]["scales"]
         scal_goal = desired_goal * self.config["observation"]["scales"]
+
+        diff = scal_achieved - scal_goal
         
-        pos_rew = np.dot(np.square(scal_achieved[:2] - scal_goal[:2]), self.config["exp_reward_weights"][:2])
-        angle_rew = np.dot(np.abs(scal_achieved[4:] - scal_goal[4:]), self.config["exp_reward_weights"][4:])
+        pos_rew = np.dot(np.square(diff), self.config["exp_position_weights"])
+        angle_rew = np.dot(np.abs(diff), self.config["exp_angle_weights"])
 
         r = 8 * np.exp(-pos_rew) + 0.5 * np.exp(-angle_rew) - 2
-        print(r)
         return r
   
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
