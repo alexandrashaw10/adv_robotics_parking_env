@@ -232,7 +232,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         pos_rew = np.dot(np.square(diff), self.config["exp_position_weights"])
         angle_rew = np.dot(np.abs(diff), self.config["exp_angle_weights"])
 
-        r = 8 * np.exp(-pos_rew) + 0.5 * np.exp(-angle_rew) - 2
+        r = 8 * np.exp(-pos_rew) + 0.5 * np.exp(-angle_rew) - self.config["collision_reward"] / self.config["duration"]
         return r
   
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:

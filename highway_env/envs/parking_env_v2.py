@@ -61,7 +61,11 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             "spots": 14,
             "obstacles": False,
             "font_size": 22,
-            "random_start": False
+            "random_start": False,
+            "exp_reward": True,
+            'custom_reward_scale': 1,
+            "exp_position_weights": [0.04, 0.03, 0, 0, 0, 0],
+            "exp_angle_weights": [0, 0, 0, 0, 40, 40],
         })
         return config
 
@@ -208,6 +212,25 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             v = Vehicle.make_on_lane(self.road, lane, 4, speed=0)
             self.road.vehicles.append(v)
 
+    def _custom_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> float:
+        rel_achieved = achieved_goal * self.config["observation"]["scales"]
+        des_goal = np.dot(desired_goal, self.config["observation"]["scales"])
+        reward = 2 * np.exp(-0.05 * (np.dot(np.square(rel_achieved - des_goal), self.config["reward_weights"])))
+        return reward
+
+    def _custom_reward_mathworks(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> float:
+        # multiply each position by the scales so that it matches the scale we want
+        scal_achieved = achieved_goal * self.config["observation"]["scales"]
+        scal_goal = desired_goal * self.config["observation"]["scales"]
+
+        diff = scal_achieved - scal_goal
+        
+        pos_rew = np.dot(np.square(diff), self.config["exp_position_weights"])
+        angle_rew = np.dot(np.abs(diff), self.config["exp_angle_weights"])
+
+        r = 8 * np.exp(-pos_rew) + 0.5 * np.exp(-angle_rew) - self.config["collision_reward"] / self.config["duration"]
+        return r
+  
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
         """
         Proximity to the goal is rewarded
@@ -220,7 +243,12 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
         :param p: the Lp^p norm used in the reward. Use p<1 to have high kurtosis for rewards in [0, 1]
         :return: the corresponding reward
         """
-        return -np.power(np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"])), p)
+        if self.config['custom_reward']:
+            return self._custom_reward(achieved_goal, desired_goal)
+        elif self.config['exp_reward']:
+            return self._custom_reward_mathworks(achieved_goal, desired_goal)
+        else:
+            return -np.power(np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"])), p)
 
     def _reward(self, action: np.ndarray) -> float:
         obs = self.observation_type_parking.observe()
