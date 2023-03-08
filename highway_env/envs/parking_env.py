@@ -109,7 +109,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             'custom_reward': False,
             "exp_reward": True,
             'custom_reward_scale': 1,
-            "exp_reward_weights": [0.04, 0.03, 40, 40],
+            "exp_reward_weights": [0.04, 0.03, 0, 0, 40, 40],
         })
         return config
 
