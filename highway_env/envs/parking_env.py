@@ -64,12 +64,12 @@ class ParkingEnv(AbstractEnv, GoalEnv):
     # # For parking env with GrayscaleObservation, the env need
     # # this PARKING_OBS to calculate the reward and the info.
     # # Bug fixed by Mcfly(https://github.com/McflyWZX)
-    # PARKING_OBS = {"observation": {
-    #         "type": "KinematicsWithGoalObservation",
-    #         "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
-    #         "scales": [100, 100, 5, 5, 1, 1],
-    #         "normalize": False
-    #     }}
+    PARKING_OBS = {"observation": {
+            "type": "KinematicsWithGoal",
+            "features": ['x', 'y', 'vx', 'vy', 'cos_h', 'sin_h'],
+            "scales": [100, 100, 5, 5, 1, 1],
+            "normalize": False
+        }}
 
     def __init__(self, config: dict = None) -> None:
         super().__init__(config)
@@ -120,7 +120,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         self.config['observation']['vehicles_count'] = self.config['vehicles_count']
 
         super().define_spaces()
-        self.observation_type_parking = observation_factory(self, self.config["observation"])
+        self.observation_type_parking = observation_factory(self, self.PARKING_OBS["observation"])
 
     def _info(self, obs, action) -> dict:
         info = super(ParkingEnv, self)._info(obs, action)
