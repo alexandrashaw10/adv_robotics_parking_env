@@ -94,7 +94,7 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             "steering_range": np.deg2rad(45),
             "simulation_frequency": 15,
             "policy_frequency": 5,
-            "duration": 100,
+            "duration": 200,
             "screen_width": 600,
             "screen_height": 350,
             "centering_position": [0.5, 0.5],
@@ -106,8 +106,10 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             "length": 8,
             "font_size": 14,
             "random_start": False,
-            'custom_reward': True,
-            'custom_reward_scale': 1
+            'custom_reward': False,
+            "exp_reward": True,
+            'custom_reward_scale': 1,
+            "exp_reward_weights": [0.04, 0.03, 40, 40],
         })
         return config
 
@@ -214,10 +216,24 @@ class ParkingEnv(AbstractEnv, GoalEnv):
             self.road.vehicles.append(v)
     
     def _custom_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> float:
-        distance = np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"]))
-        reward = (np.sqrt(2/np.pi) * np.exp(-np.power(distance, 0.5)**2 / 6)) * self.config['reward_scale']
+        rel_achieved = achieved_goal * self.config["observation"]["scales"]
+        des_goal = np.dot(desired_goal, self.config["observation"]["scales"])
+        reward = 2 * np.exp(-0.05 * (np.dot(np.square(rel_achieved - des_goal), self.config["reward_weights"])))
         return reward
+    
+    def _custom_reward_mathworks(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> float:
+        print(achieved_goal, desired_goal)
+        # multiply each position by the scales so that it matches the scale we want
+        scal_achieved = achieved_goal * self.config["observation"]["scales"]
+        scal_goal = desired_goal * self.config["observation"]["scales"]
+        
+        pos_rew = np.dot(np.square(scal_achieved[:2] - scal_goal[:2]), self.config["exp_reward_weights"][:2])
+        angle_rew = np.dot(np.abs(scal_achieved[4:] - scal_goal[4:]), self.config["exp_reward_weights"][4:])
 
+        r = 8 * np.exp(-pos_rew) + 0.5 * np.exp(-angle_rew) - 2
+        print(r)
+        return r
+  
     def compute_reward(self, achieved_goal: np.ndarray, desired_goal: np.ndarray, info: dict, p: float = 0.5) -> float:
         """
         Proximity to the goal is rewarded
@@ -232,6 +248,8 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         """
         if self.config['custom_reward']:
             return self._custom_reward(achieved_goal, desired_goal)
+        elif self.config['exp_reward']:
+            return self._custom_reward_mathworks(achieved_goal, desired_goal)
         else:
             return -np.power(np.dot(np.abs(achieved_goal - desired_goal), np.array(self.config["reward_weights"])), p)
 
@@ -240,6 +258,8 @@ class ParkingEnv(AbstractEnv, GoalEnv):
         obs = obs if isinstance(obs, tuple) else (obs,)
         reward = sum(self.compute_reward(agent_obs['achieved_goal'], agent_obs['desired_goal'], {}) for agent_obs in obs)
         reward += self.config['collision_reward'] * sum(v.crashed for v in self.controlled_vehicles)
+        # add 100 to the reward if the agent succeeds
+        reward += 100 * sum(self._is_success(agent_obs['achieved_goal'], agent_obs['desired_goal'], {}) for agent_obs in obs)
         return reward
 
     def _is_success(self, achieved_goal: np.ndarray, desired_goal: np.ndarray) -> bool:
