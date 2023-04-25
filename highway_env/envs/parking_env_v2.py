@@ -63,6 +63,7 @@ class ParkingEnv2(AbstractEnv, GoalEnv):
             "font_size": 22,
             "random_start": False,
             "exp_reward": True,
+            'custom_reward': False,
             'custom_reward_scale': 1,
             "exp_position_weights": [0.04, 0.03, 0, 0, 0, 0],
             "exp_angle_weights": [0, 0, 0, 0, 40, 40],
