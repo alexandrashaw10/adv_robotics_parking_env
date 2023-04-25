@@ -11,3 +11,4 @@ from highway_env.envs.exit_env import *
 from highway_env.envs.racetrack_env import *
 
 from highway_env.envs.parking_env_v2 import *
+from highway_env.envs.parking_env_rel_pos_v2 import *
