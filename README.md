@@ -1,4 +1,4 @@
-# highway-env
+# Additional Parking Environment built on top of highway-env (credits to eleurent/highway-env)
 
 [![build](https://github.com/eleurent/highway-env/workflows/build/badge.svg)](https://github.com/eleurent/highway-env/actions?query=workflow%3Abuild)
 [![Documentation Status](https://readthedocs.org/projects/highway-env/badge/?version=latest)](https://highway-env.readthedocs.io/en/latest/?badge=latest)
