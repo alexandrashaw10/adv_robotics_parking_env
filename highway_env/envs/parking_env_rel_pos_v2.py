@@ -266,11 +266,6 @@ register(
     entry_point='highway_env.envs:ParkingEnvRel2',
 )
 
-register(
-    id='parking-rel-v0',
-    entry_point='highway_env.envs:ParkingRelEnv',
-)
-
 # register(
 #     id='parking-ActionRepeat-v0',
 #     entry_point='highway_env.envs:ParkingEnvActionRepeat'

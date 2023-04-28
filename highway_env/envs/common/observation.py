@@ -580,9 +580,11 @@ class RelativeKinematicsWithGoal(KinematicObservation):
 
         if not self.env.road:
             return np.zeros(self.space().shape)
+        
+        goal = np.ravel(pd.DataFrame.from_records([self.env.goal.to_dict(origin=self.observer_vehicle)])[self.features])
 
         # Add ego-vehicle
-        df = pd.DataFrame.from_records([self.observer_vehicle.to_dict()])[self.features]
+        df = pd.DataFrame.from_records([self.observer_vehicle.to_dict(origin=self.observer_vehicle)])[self.features]
         print(df.head())
         achieved_goal = np.ravel(df)
         # Add nearby traffic
@@ -610,7 +612,7 @@ class RelativeKinematicsWithGoal(KinematicObservation):
         if self.order == "shuffled":
             self.env.np_random.shuffle(obs[1:])
         
-        goal = np.ravel(pd.DataFrame.from_records([self.env.goal.to_dict()])[self.features])
+
         obs = {
             "observation": obs / self.scales,
             "achieved_goal": achieved_goal / self.scales,
